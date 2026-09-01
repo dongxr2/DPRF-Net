@@ -1,0 +1,41 @@
+{
+  "dataset": "ESTOGU With Driver subset",
+  "upstream_doi": "10.5281/zenodo.18222578",
+  "upstream_license": "CC-BY-4.0",
+  "files": 396,
+  "window_size": 4096,
+  "windows_per_file": 12,
+  "rows_per_table": 4752,
+  "feature_dimensions": {
+    "vibration": 41,
+    "electrical": 55,
+    "metadata": 6,
+    "total_columns": 102
+  },
+  "sample_key": ["source_file", "window_id"],
+  "conditions": [
+    "clean_reextract",
+    "vibration_gain_075",
+    "vibration_gain_050",
+    "vibration_gain_025",
+    "electrical_gain_075",
+    "electrical_gain_050",
+    "electrical_gain_025",
+    "vibration_drift_025rms",
+    "vibration_drift_050rms",
+    "vibration_drift_100rms",
+    "electrical_drift_025rms",
+    "electrical_drift_050rms",
+    "electrical_drift_100rms"
+  ],
+  "generated_at_evaluation": [
+    "vibration_missing",
+    "electrical_missing"
+  ],
+  "clean_reextract_check": {
+    "reference_rows": 4752,
+    "matched_rows": 4752,
+    "max_abs_difference": 2.842170943040401e-14,
+    "allclose_rtol_1e-10_atol_1e-12": true
+  }
+}
