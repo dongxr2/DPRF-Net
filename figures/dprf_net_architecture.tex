@@ -1,0 +1,189 @@
+% 核心结论：DPRF-Net 将诊断偏好与测量可靠性解耦，经乘积归一化得到融合权重，再由残差开关控制稳定均值向自适应融合的偏移。
+% 图原型：Mode C 原创复杂档；中央双核 hero + 左侧双源输入 + 右侧分类输出 + 底部训练专用轨道。
+% 证据层级：hero = p⊙r→w 与 h_f=h_mu+alpha(h_a-h_mu)；支撑 = 双源波形/编码、交互证据、分类头、训练目标。
+% 能不能更少：不画 benchmark 与消融结果；只保留解释方法机制所需的输入微图、真实网络维度、公式和训练/推理边界。
+% Form B Narrative：
+% Zone 1 x=[-0.3,5.1], y=[-2.9,7.9]：上下双源输入微图与对应 64 维编码器；右缘形成特征对。
+% Zone 2 x=[5.45,13.0]：交互向量为左侧大框，三预测头纵向排列；顶部留 0.8cm 给特征旁路。
+% Zone 3 x=[13.35,26.0]：金色乘积校准与橙色残差插值构成双核 hero；均值/自适应路径上下平行。
+% Zone 4 x=[26.35,31.4]：紧凑分类器和六类输出，不与 hero 争夺视觉重量。
+% 主流均从左向右；训练支路将在下一阶段置于 y<-3.6 的独立 rail。
+\documentclass[tikz,border=20pt]{standalone}
+\usepackage[fontset=none]{ctex}
+\setCJKmainfont{Microsoft YaHei}
+\setCJKsansfont{Microsoft YaHei}
+\usepackage{amsmath,amssymb}
+\usetikzlibrary{arrows.meta,bending,positioning,calc,backgrounds,fit,shadows,shapes.geometric}
+\definecolor{Navy}{HTML}{102A56}\definecolor{Ink}{HTML}{16243A}
+\definecolor{Blue}{HTML}{3060A8}\definecolor{BlueBg}{HTML}{DCE6F4}
+\definecolor{Purple}{HTML}{6E3FA0}\definecolor{PurpleBg}{HTML}{EDE3F6}
+\definecolor{Orange}{HTML}{D06020}\definecolor{OrangeBg}{HTML}{F9E0D0}
+\definecolor{Teal}{HTML}{1F8F8F}\definecolor{TealBg}{HTML}{D3EBEB}
+\definecolor{Gold}{HTML}{B08820}\definecolor{GoldBg}{HTML}{F4E8CC}
+\definecolor{Grey}{HTML}{606060}\definecolor{GreyBg}{HTML}{F1F3F5}
+\definecolor{Red}{HTML}{B64B5E}\definecolor{RedBg}{HTML}{F8E3E7}
+\pgfdeclarelayer{background}\pgfsetlayers{background,main}
+\tikzset{
+ stage title/.style={anchor=west,font=\small\bfseries},
+ base/.style={rounded corners=4pt,align=center,line width=.8pt,inner sep=6pt,drop shadow={opacity=.08}},
+ source/.style={base,minimum width=2.25cm,minimum height=2.55cm},
+ encoder/.style={base,minimum width=2.0cm,minimum height=2.55cm},
+ head/.style={base,minimum width=3.35cm,minimum height=1.18cm,font=\footnotesize},
+ formula/.style={base,line width=1pt,inner sep=8pt},
+ arrow/.style={-{Stealth[length=5pt 1.5,width'=0pt .6]},line width=1pt,shorten >=2pt,shorten <=1pt,color=Navy!78},
+ arrow thick/.style={arrow,line width=1.6pt},
+ arrow short/.style={-{Stealth[length=3pt 1,width'=0pt .5]},line width=.8pt,shorten >=1pt,shorten <=0pt,color=Navy!78},
+ fan stub/.style={-{Stealth[length=5pt 1.5,width'=0pt .6]},line width=1pt,shorten >=2pt,shorten <=0pt,color=Navy!78},
+ residual/.style={-{Stealth[length=4pt 1.2,width'=0pt .6]},line width=.9pt,densely dashed,rounded corners=5pt,shorten >=2pt,color=Purple},
+ control/.style={-{Stealth[length=4pt 1.2,width'=0pt .6]},line width=1.1pt,color=Orange,shorten >=2pt},
+ annot/.style={font=\scriptsize,color=Grey,align=center}
+}
+\begin{document}
+\begin{tikzpicture}[font=\sffamily]
+\node[anchor=west,font=\Large\bfseries,color=Navy] at (-.25,9.25) {DPRF-Net：偏好—可靠性解耦的双路径残差融合网络};
+\node[anchor=west,font=\footnotesize,color=Grey] at (-.25,8.65) {基于同步振动与电气特征的传感器退化鲁棒电机故障诊断};
+\draw[Navy,line width=1.1pt] (-.25,8.28) -- (31.35,8.28);
+\begin{pgfonlayer}{background}
+ \fill[BlueBg!35,rounded corners=12pt] (-.3,7.9) rectangle (5.1,0.15);
+ \fill[PurpleBg!35,rounded corners=12pt] (5.2,7.9) rectangle (13.0,0.15);
+ \fill[TealBg!28,rounded corners=12pt] (13.35,7.9) rectangle (26.45,0.15);
+ \fill[GreyBg!70,rounded corners=12pt] (26.7,7.9) rectangle (31.4,0.15);
+\end{pgfonlayer}
+\node[stage title,color=Blue] at (0.05,7.55) {01 \quad 双源表征};
+\node[stage title,color=Purple] at (5.8,7.55) {02 \quad 跨源交互与可信度估计};
+\node[stage title,color=Teal] at (13.7,7.55) {03 \quad 校准双路径残差融合};
+\node[stage title,color=Navy] at (26.7,7.55) {04 \quad 故障分类};
+
+% Input sources and waveform micro-visualizations
+\node[source,fill=BlueBg,draw=Blue] (vib) at (1.2,5.45) {};
+\node[font=\small\bfseries,color=Blue] at (1.2,6.35) {振动特征};
+\draw[Blue!25,line width=.4pt] (.25,5.45) -- (2.15,5.45);
+\draw[Blue,line width=.9pt] plot[smooth] coordinates {(.25,5.42)(.40,5.58)(.55,5.25)(.70,5.68)(.85,5.12)(1.00,5.79)(1.15,5.28)(1.30,5.92)(1.45,5.20)(1.60,5.67)(1.75,5.30)(1.90,5.57)(2.15,5.43)};
+\node[font=\scriptsize,color=Ink] at (1.2,4.68) {$\mathbf x_v\in\mathbb R^{41}$};
+\node[encoder,fill=white,draw=Blue!65] (ev) at (4.05,5.45) {{\color{Blue}\bfseries 振动编码器 $E_v$}\\[4pt]Linear $41\!\to\!64$\\ReLU\\Dropout $(0.1)$};
+\node[source,fill=OrangeBg,draw=Orange] (elec) at (1.2,1.75) {};
+\node[font=\small\bfseries,color=Orange] at (1.2,2.65) {电气特征};
+\draw[Orange!25,line width=.4pt] (.25,1.75) -- (2.15,1.75);
+\draw[Orange,line width=.9pt] plot[smooth] coordinates {(.25,1.75)(.40,2.12)(.55,2.25)(.70,2.05)(.85,1.62)(1.00,1.30)(1.15,1.28)(1.30,1.58)(1.45,2.00)(1.60,2.23)(1.75,2.14)(1.90,1.78)(2.15,1.40)};
+\node[font=\scriptsize,color=Ink] at (1.2,.98) {$\mathbf x_e\in\mathbb R^{55}$};
+\node[encoder,fill=white,draw=Orange!65] (ee) at (4.05,1.75) {{\color{Orange}\bfseries 电气编码器 $E_e$}\\[4pt]Linear $55\!\to\!64$\\ReLU\\Dropout $(0.1)$};
+\draw[arrow] (vib.east) -- (ev.west);\draw[arrow] (elec.east) -- (ee.west);
+
+\node[rounded corners=2pt,fill=white,draw=Grey!60,line width=.4pt,inner sep=1pt,align=center,font=\tiny] (pair) at (5.82,3.6) {$\{\mathbf h_v,\mathbf h_e\}$};
+\node[annot] at (5.75,3.12) {$\in\mathbb R^{64}$};
+\draw[arrow] (ev.east) -| ([yshift=.25cm]pair.west);
+\draw[arrow] (ee.east) -| ([yshift=-.25cm]pair.west);
+
+% Interaction evidence
+\node[formula,fill=white,draw=Purple,minimum width=2.55cm,minimum height=5.1cm] (inter) at (7.75,3.6) {};
+\node[font=\small\bfseries,color=Purple] at (7.75,5.65) {跨源交互};
+\node[font=\Large\bfseries,color=Navy] at (7.75,5.03) {$\mathbf z$};
+\foreach \lab/\yy/\fc/\dc in {$\mathbf h_v$/4.35/BlueBg/Blue,$\mathbf h_e$/3.65/OrangeBg/Orange,$|\mathbf h_v-\mathbf h_e|$/2.95/PurpleBg/Purple,$\mathbf h_v\odot\mathbf h_e$/2.25/TealBg/Teal}{
+ \node[rounded corners=2pt,fill=\fc,draw=\dc,line width=.5pt,minimum width=2.0cm,minimum height=.48cm,font=\scriptsize] at (7.75,\yy) {\lab};
+}
+\node[font=\scriptsize,color=Grey] at (7.75,1.48) {拼接后 $\mathbf z\in\mathbb R^{256}$};
+\draw[arrow short] (pair.east) -- (inter.west);
+
+% Fan-out to the three heads
+\node[head,fill=PurpleBg,draw=Purple] (pref) at (11.05,6.0) {{\color{Purple}\bfseries 诊断偏好 $\mathbf p$}\\[-1pt]$256\!\to\!64\!\to\!2$\\[-1pt]{\scriptsize Softmax}};
+\node[head,fill=TealBg,draw=Teal] (rel) at (11.05,3.75) {{\color{Teal}\bfseries 测量可靠性 $\mathbf r$}\\[-1pt]$256\!\to\!64\!\to\!2$\\[-1pt]{\scriptsize Sigmoid}};
+\node[head,fill=OrangeBg,draw=Orange] (switch) at (11.05,1.5) {{\color{Orange}\bfseries 残差开关 $\alpha$}\\[-1pt]$256\!\to\!32\!\to\!1$\\[-1pt]{\scriptsize Sigmoid}};
+\coordinate (hspine) at (9.1,3.75);
+\draw[line width=1pt,color=Navy!75] (inter.east) -- (hspine);
+\draw[line width=1pt,color=Navy!75] (hspine |- pref.west) -- (hspine |- switch.west);
+\draw[fan stub] (hspine |- pref.west) -- (pref.west);
+\draw[fan stub] (hspine |- rel.west) -- (rel.west);
+\draw[fan stub] (hspine |- switch.west) -- (switch.west);
+
+% Central dual-core hero
+\node[formula,fill=GoldBg,draw=Gold,minimum width=3.85cm,minimum height=3.6cm] (cal) at (15.55,4.85) {{\color{Gold}\small\bfseries 乘积校准}\\[4pt]
+ $\tilde{\mathbf r}=\max(\mathbf r,\varepsilon)$\\[2pt]
+ $\mathbf u=\mathbf p\odot\tilde{\mathbf r}$\\[2pt]
+ $\displaystyle w_m=\frac{u_m}{\sum_k u_k}$\\[3pt]
+ {\scriptsize\color{Grey}$\varepsilon=10^{-6}$，$\sum_mw_m=1$}};
+\draw[arrow,color=Purple] (pref.east) -- ([yshift=.72cm]cal.west);
+\draw[arrow,color=Teal] (rel.east) -- ([yshift=-.72cm]cal.west);
+
+\node[formula,fill=BlueBg,draw=Blue,minimum width=3.45cm,minimum height=1.35cm] (mean) at (19.8,6.0) {{\color{Blue}\bfseries 稳定均值路径}\\[2pt]$\mathbf h_\mu=\tfrac12(\mathbf h_v+\mathbf h_e)$};
+\node[formula,fill=TealBg,draw=Teal,minimum width=3.45cm,minimum height=1.35cm] (adapt) at (19.8,3.25) {{\color{Teal}\bfseries 自适应路径}\\[2pt]$\mathbf h_a=w_v\mathbf h_v+w_e\mathbf h_e$};
+\draw[arrow short,color=Gold] (cal.east) -- node[annot,above] {$\mathbf w$} (adapt.west);
+
+% Feature bypass uses a separate upper rail
+\coordinate (railA) at (5.75,6.92);\coordinate (railB) at (20.1,6.92);
+\draw[residual,color=Grey] (pair.north) -- (railA);
+\draw[line width=.8pt,densely dashed,color=Grey] (railA) -- node[annot,above] {稳定特征旁路 $\{\mathbf h_v,\mathbf h_e\}$} (railB);
+\draw[residual,color=Grey] (railB) -- (mean.north);
+
+\node[formula,draw=Orange,fill=OrangeBg,line width=1.2pt,minimum width=4.2cm,minimum height=3.50cm,inner sep=5pt] (res) at (24.4,4.55) {{\color{Orange}\bfseries 残差插值}\\[5pt]
+ $\mathbf h_f=\mathbf h_\mu+$\\[-1pt]$\alpha(\mathbf h_a-\mathbf h_\mu)$\\[4pt]
+ {\scriptsize\color{Grey}$\alpha=0$: 稳定均值 \quad $\alpha=1$: 自适应融合}};
+\draw[arrow,color=Blue] (mean.east) -- (res.north west);
+\draw[arrow,color=Teal] (adapt.east) -- (res.south west);
+\draw[line width=1.1pt,color=Orange,rounded corners=5pt] (switch.east) -- ++(.55,0) -- node[annot,below,pos=.62] {控制偏移幅度} (24.4,1.50);
+\draw[control] (24.4,1.50) -- (res.south);
+
+% Classifier and outputs
+\node[formula,fill=white,draw=Navy,minimum width=3.75cm,minimum height=4.25cm] (cls) at (29.15,4.55) {{\color{Navy}\small\bfseries 六类故障分类}\\[3pt]
+ {\scriptsize\color{Grey}输入 $\mathbf h_f\in\mathbb R^{64}$}\\[3pt]
+ $64\!\to\!64\!\to\!6$\\[2pt]
+ {\scriptsize Linear $\to$ ReLU $\to$ Linear}\\[6pt]
+ {\color{Blue}\bfseries N \quad BB \quad BR}\\[2pt]
+ {\color{Teal}\bfseries RB3 \quad RB5 \quad SW}\\[5pt]
+ {\scriptsize\color{Grey}Softmax 输出 $\boldsymbol\pi\in[0,1]^6$}};
+\draw[arrow short,color=Navy,line width=1.6pt] (res.east) -- (cls.west);
+
+
+% ======================== TRAINING-ONLY RAIL ========================
+\begin{pgfonlayer}{background}
+ \fill[RedBg!42,rounded corners=12pt] (-.3,-.55) rectangle (31.4,-5.60);
+\end{pgfonlayer}
+\draw[Grey!55,line width=.7pt,densely dashed] (-.1,-.75) -- (31.2,-.75);
+\node[rounded corners=3pt,draw=Red,fill=white,line width=.7pt,font=\scriptsize\bfseries,text=Red,inner sep=4pt] at (1.45,-1.25) {TRAINING ONLY};
+\node[anchor=west,font=\scriptsize,color=Grey] at (13.35,-1.25) {质量目标仅用于辅助监督，不进入推理输入};
+
+\node[formula,fill=TealBg,draw=Teal,minimum width=3.3cm,minimum height=1.35cm] (qtar) at (3.2,-2.55) {{\color{Teal}\bfseries 质量目标 $\mathbf q$}\\[2pt]$\mathbf q=[q_v,q_e]\in[0,1]^2$\\[-1pt]{\scriptsize 监督可靠性头 $\mathbf r$}};
+\node[formula,fill=OrangeBg,draw=Orange,minimum width=3.3cm,minimum height=1.35cm] (ttar) at (7.1,-2.55) {{\color{Orange}\bfseries 切换目标 $t$}\\[2pt]$t=1-\min(q_v,q_e)$\\[-1pt]{\scriptsize 监督残差开关 $\alpha$}};
+\node[formula,fill=white,draw=Red,minimum width=7.6cm,minimum height=1.55cm] (loss) at (17.05,-2.55) {{\color{Red}\bfseries 联合训练目标}\\[3pt]
+ $\mathcal L=\mathcal L_{\mathrm{cls}}+0.2\,\mathcal L_{\mathrm{rel}}+0.1\,\mathcal L_{\mathrm{sw}}$\\[2pt]
+ {\scriptsize\color{Grey}$y\to\mathcal L_{\mathrm{cls}}$，$\mathbf q\to\mathcal L_{\mathrm{rel}}$，$t\to\mathcal L_{\mathrm{sw}}$}};
+\draw[line width=.9pt,densely dashed,color=Teal,rounded corners=5pt] (qtar.north east) -- ++(.45,.38) -- (9.0,-1.50);
+\draw[residual,color=Teal] (9.0,-1.50) -- (loss.north west);
+\draw[residual,color=Orange] (ttar.east) -- (loss.south west);
+
+% Dashed supervision rails to the corresponding heads; each rail stays at the right side of Zone 2.
+\coordinate (qrailA) at (12.55,-3.55);\coordinate (qrailB) at (12.55,2.95);
+\draw[line width=.75pt,densely dashed,color=Teal,rounded corners=5pt] (qtar.south east) -- ++(.35,-.30) -- (qrailA) -- (qrailB);
+\draw[residual,color=Teal] (qrailB) -- (rel.south east);
+\coordinate (trailA) at (12.85,-3.32);\coordinate (trailB) at (12.85,.70);
+\draw[line width=.75pt,densely dashed,color=Orange,rounded corners=5pt] (ttar.south east) -- ++(.30,-.10) -- (trailA) -- (trailB);
+\draw[residual,color=Orange] (trailB) -- (switch.south east);
+
+% Hyperparameter table snippet adapted from the validated library.
+\def\tabdata{Hidden dim/$64$,Dropout/$0.1$,Classes/$6$,Parameters/$52\,235$,$\lambda_{\rm rel}$/$0.2$,$\lambda_{\rm sw}$/$0.1$}
+\def\xO{23.5}\def\yO{-1.55}\def\rowH{.47}\def\colW{7.4}
+\fill[Navy] (\xO,\yO) rectangle (\xO+\colW,\yO+\rowH);
+\node[font=\scriptsize\bfseries,color=white] at (\xO+\colW/2,\yO+\rowH/2) {网络与训练配置};
+\newcount\rowcount\rowcount=0
+\foreach \kk/\vv in \tabdata{\global\advance\rowcount by 1}
+\edef\nrows{\the\rowcount}\pgfmathsetmacro\tabH{\nrows*\rowH}
+\draw[Navy,line width=.6pt] (\xO,\yO-\tabH) rectangle (\xO+\colW,\yO+\rowH);
+\foreach[count=\idx] \kk/\vv in \tabdata{
+ \pgfmathsetmacro\yp{\yO-(\idx-1)*\rowH}
+ \ifodd\idx\else\fill[BlueBg!55] (\xO,\yp-\rowH) rectangle (\xO+\colW,\yp);\fi
+ \node[anchor=west,font=\scriptsize,color=Grey] at (\xO+.14,\yp-\rowH/2) {\kk};
+ \node[anchor=east,font=\scriptsize\bfseries,color=Navy] at (\xO+\colW-.14,\yp-\rowH/2) {\vv};
+ \draw[Navy!22,line width=.3pt] (\xO,\yp-\rowH) -- (\xO+\colW,\yp-\rowH);
+}
+
+% Bottom glossary/legend carries new semantics rather than repeating the pipeline.
+\node[rounded corners=4pt,fill=GreyBg,draw=Grey!45,line width=.5pt,minimum width=30.5cm,minimum height=.72cm,align=center,font=\scriptsize,text=Grey] at (15.55,-5.10) {
+ \tikz{\draw[arrow thick] (0,0)--(.8,0);} 推理主流 \quad
+ \tikz{\draw[residual] (0,0)--(.8,0);} 训练监督 \quad
+ {\color{Purple}\bfseries $\mathbf p$} 诊断偏好 \quad
+ {\color{Teal}\bfseries $\mathbf r$} 测量可靠性 \quad
+ {\color{Gold}\bfseries $\mathbf w$} 校准权重 \quad
+ {\color{Orange}\bfseries $\alpha$} 偏离稳定均值的幅度
+};
+
+\end{tikzpicture}
+\end{document}
