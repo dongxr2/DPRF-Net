@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dprf-net"
+version = "1.0.0"
+description = "DPRF-Net for robust multimodal motor fault diagnosis under sensor degradation"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.26,<3",
+  "pandas>=2.1,<3",
+  "scipy>=1.11,<2",
+  "scikit-learn>=1.4,<2",
+  "torch>=2.2,<3",
+  "joblib>=1.3,<2",
+  "xgboost>=2.0,<4",
+]
+
+[project.optional-dependencies]
+baselines = [
+  "rtdl-revisiting-models==0.0.2",
+  "tabm==0.0.3",
+]
+test = ["pytest>=8,<10"]
+
+[tool.setuptools.packages.find]
+include = ["dprf*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
