@@ -1,0 +1,26 @@
+{
+  "loads": [0, 111, 222, 333, 444, 555],
+  "seeds": [301, 302, 303, 304, 305],
+  "epochs": 80,
+  "batch_size": 64,
+  "learning_rate": 0.001,
+  "weight_decay": 0.0001,
+  "hidden_dim": 64,
+  "dropout": 0.1,
+  "reliability_loss_weight": 0.2,
+  "switch_loss_weight": 0.1,
+  "state_probabilities": [0.4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+  "models": [
+    "mean_da",
+    "gate_da",
+    "rcarf_hard",
+    "dprf_no_rel_loss",
+    "dprf_no_switch_loss",
+    "dprf_no_semantic",
+    "dprf_full"
+  ],
+  "analysis_status": "locked_internal_confirmation",
+  "noise_in_training": false,
+  "noise_in_evaluation": false,
+  "independence_scope": "new optimization seeds; same upstream records as method development"
+}
