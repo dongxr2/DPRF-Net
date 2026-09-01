@@ -1,0 +1,60 @@
+{
+  "created_at": "2026-08-02T23:57:54.548761+08:00",
+  "protocol": "docs/CLASSICAL_BASELINE_PROTOCOL.md",
+  "loads": [
+    0,
+    111,
+    222,
+    333,
+    444,
+    555
+  ],
+  "seeds": [
+    301,
+    302,
+    303,
+    304,
+    305
+  ],
+  "models": [
+    "lr",
+    "svm_rbf",
+    "knn",
+    "gnb",
+    "lda",
+    "cart",
+    "rf",
+    "extra_trees",
+    "hist_gb",
+    "xgboost"
+  ],
+  "conditions": [
+    "clean_reextract",
+    "vibration_missing",
+    "electrical_missing",
+    "vibration_gain_075",
+    "vibration_gain_050",
+    "vibration_gain_025",
+    "electrical_gain_075",
+    "electrical_gain_050",
+    "electrical_gain_025",
+    "vibration_drift_025rms",
+    "vibration_drift_050rms",
+    "vibration_drift_100rms",
+    "electrical_drift_025rms",
+    "electrical_drift_050rms",
+    "electrical_drift_100rms"
+  ],
+  "state_probabilities": [
+    0.4,
+    0.1,
+    0.1,
+    0.1,
+    0.1,
+    0.1,
+    0.1
+  ],
+  "augmentation_repeats": 2,
+  "rows": 4500,
+  "elapsed_s": 760.5264447999652
+}

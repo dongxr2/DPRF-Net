@@ -1,0 +1,51 @@
+{
+  "training_exposure": "clean_only",
+  "models": [
+    "mlp",
+    "resnet",
+    "ft_transformer",
+    "tabm",
+    "tmc"
+  ],
+  "loads": [
+    0,
+    111,
+    222,
+    333,
+    444,
+    555
+  ],
+  "seeds": [
+    301,
+    302,
+    303,
+    304,
+    305
+  ],
+  "epochs": 80,
+  "batch_size": 64,
+  "conditions": [
+    "clean_reextract",
+    "vibration_missing",
+    "electrical_missing",
+    "vibration_gain_075",
+    "vibration_gain_050",
+    "vibration_gain_025",
+    "electrical_gain_075",
+    "electrical_gain_050",
+    "electrical_gain_025",
+    "vibration_drift_025rms",
+    "vibration_drift_050rms",
+    "vibration_drift_100rms",
+    "electrical_drift_025rms",
+    "electrical_drift_050rms",
+    "electrical_drift_100rms"
+  ],
+  "device": "cuda",
+  "torch_threads": 1,
+  "rtdl_version": "0.0.2",
+  "tabm_version": "0.0.3",
+  "tmc_commit": "a3272b8746861c76a3461943b5eee51df5b5a8fe",
+  "elapsed_s": 2472.1623185999924,
+  "rows": 2250
+}

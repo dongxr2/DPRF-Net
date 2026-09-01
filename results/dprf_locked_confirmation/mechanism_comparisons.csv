@@ -1,0 +1,3 @@
+metric,comparison,dprf_mean,comparator_mean,mean_difference,ci95_low,ci95_high,wins_lower_is_better,losses,wilcoxon_p_raw
+reliability_mae,dprf_full vs dprf_no_rel_loss,0.0991038153581485,0.328446478024454,-0.2293426626663055,-0.2526123082685432,-0.20579156644750288,6,0,0.03125
+switch_mae,dprf_full vs dprf_no_switch_loss,0.1595670871105459,0.4333889263206058,-0.27382183921005987,-0.27587621197104456,-0.27176098358299994,6,0,0.03125
