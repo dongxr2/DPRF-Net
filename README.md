@@ -23,7 +23,6 @@ DPRF-Net_GitHub/
 │   └── raw/                     # 原始 ESTOGU 数据下载与目录说明
 ├── docs/                        # 锁定实验协议
 ├── dprf/                        # 模型与公共实验组件
-├── figures/                     # TikZ、PDF 和 PNG 架构图
 ├── results/                     # DPRF-Net 与深度基线的论文结果
 ├── scripts/
 │   ├── train_dprf.py            # DPRF-Net/消融训练与六折评估
