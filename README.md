@@ -1,8 +1,6 @@
 # DPRF-Net
 
-DPRF-Net（Decoupled Preference–Reliability Fusion Network）是面向传感器质量退化的电机多源故障诊断模型。仓库包含论文最终实现、ESTOGU 变频驱动子集的论文级衍生特征、六折留一负载协议、深度基线入口、锁定实验结果和可编辑 TikZ 架构图。
-
-![DPRF-Net architecture](figures/dprf_net_architecture.png)
+DPRF-Net（Decoupled Preference–Reliability Fusion Network）是面向传感器质量退化的电机多源故障诊断模型。仓库包含论文最终实现、ESTOGU 变频驱动子集的论文级衍生特征、六折留一负载协议、深度基线入口、锁定实验结果等。
 
 ## 主要结果
 
